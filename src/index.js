@@ -84,7 +84,6 @@ function addNewCard(evt) {
 
 function openPopupImage(data) {
   imageUrl.src = data.link;
-  imageUrl.alt = data.name;
   imageText.textContent = data.name;
   openModal(popupImage);
 }
