@@ -4,7 +4,7 @@ import { createCard, deleteCard, cardLiked } from "./components/card.js";
 
 import { initialCards } from "./components/cards.js";
 
-import { openModal, closeModal } from "./components/modal.js";
+import { openModal, closeModal, closeByEscape } from "./components/modal.js";
 
 const cardContainer = document.querySelector(".places__list");
 // попапы
@@ -42,15 +42,6 @@ function addCards() {
 }
 
 addCards();
-
-// Закрытие на escape
-
-function closeByEscape(evt, popuptype) {
-  if (evt.key === "Escape") {
-    document.removeEventListener("keydown", closeByEscape);
-    closeModal(popuptype);
-  }
-}
 
 // редактирование профиля
 
@@ -128,18 +119,6 @@ popupImage.addEventListener("click", function (evt) {
   if (evt.target === popupImage) {
     closeModal(popupImage);
   }
-});
-
-document.addEventListener("keydown", function (evt) {
-  closeByEscape(evt, popupEdit);
-});
-
-document.addEventListener("keydown", function (evt) {
-  closeByEscape(evt, popupAdd);
-});
-
-document.addEventListener("keydown", function (evt) {
-  closeByEscape(evt, popupImage);
 });
 
 editForm.addEventListener("submit", handleEditFormSubmit);
