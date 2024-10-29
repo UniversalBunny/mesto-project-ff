@@ -6,6 +6,8 @@ import { initialCards } from "./components/cards.js";
 
 import { openModal, closeModal, closeByEscape } from "./components/modal.js";
 
+import {showError, hideError, checkInputValidity, hasInvalidInput, toggleButtonState, setEventListeners, enableValidation} from "./components/validation.js";
+
 const cardContainer = document.querySelector(".places__list");
 // попапы
 const editButton = document.querySelector(".profile__edit-button");
@@ -124,3 +126,16 @@ popupImage.addEventListener("click", function (evt) {
 editForm.addEventListener("submit", handleEditFormSubmit);
 
 cardForm.addEventListener("submit", addNewCard);
+
+//  // //
+
+const validationConfig = {
+  formSelector: '.popup__form',
+  inputSelector: '.popup__input',
+  submitButtonSelector: '.popup__button',
+  inactiveButtonClass: 'popup__button-inactive',
+  inputErrorClass: 'popup__input_type_error',
+  errorClass: 'popup__input-error_active'
+};
+
+enableValidation(validationConfig);

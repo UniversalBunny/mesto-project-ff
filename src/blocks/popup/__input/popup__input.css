@@ -14,6 +14,28 @@
   margin-bottom: 0;
 }
 
+.popup__field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.popup__input_type_error {
+  border-bottom-color: rgb(255, 0, 0);
+}
+
+.popup__input-error {
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 15px;
+  color: rgb(255, 0, 0);
+  opacity: 0;
+}
+
+.popup__input-error_active {
+  opacity: 1;
+}
+
 @media screen and (max-width: 568px) {
   .popup__title {
     font-size: 12px;
