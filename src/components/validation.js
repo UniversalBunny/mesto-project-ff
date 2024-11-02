@@ -1,12 +1,3 @@
-// const validationConfig = {
-//   formSelector: '.popup__form',
-//   inputSelector: '.popup__input',
-//   submitButtonSelector: '.popup__button',
-//   inactiveButtonClass: 'popup__button-inactive',
-//   inputErrorClass: 'popup__input_type_error',
-//   errorClass: 'popup__input-error_active'
-// };
-
 function showError(form, input, errorMessage, settings) {
     const errorElement = form.querySelector(`.${input.name}-error`);
     input.classList.add(settings.inputErrorClass);
@@ -14,14 +5,14 @@ function showError(form, input, errorMessage, settings) {
     errorElement.classList.add(settings.errorClass);
 }
 
-function hideError(form, input,settings) {
+function hideError(form, input, settings) {
     const errorElement = form.querySelector(`.${input.name}-error`);
     input.classList.remove(settings.inputErrorClass);
     errorElement.classList.remove(settings.errorClass);
     errorElement.textContent = '';
 }
 
-function checkInputValidity(form, input) {
+function checkInputValidity(form, input, settings) {
     if(input.validity.patternMismatch){
       input.setCustomValidity(input.dataset.errorMessage);
     } else {
@@ -29,9 +20,9 @@ function checkInputValidity(form, input) {
     }
 
     if(!input.validity.valid) {
-        showError(form, input, input.validationMessage);
+        showError(form, input, input.validationMessage, settings);
     } else {
-        hideError(form, input);
+        hideError(form, input, settings);
     }
 }
 
@@ -41,7 +32,7 @@ function hasInvalidInput(inputList) {
   })
 }
 
-function toggleButtonState(inputList, buttonElement,settings) {
+function toggleButtonState(inputList, buttonElement, settings) {
   if (hasInvalidInput(inputList)) {
     buttonElement.setAttribute('aria-disabled', 'true');
     buttonElement.classList.add(settings.inactiveButtonClass);
@@ -54,11 +45,11 @@ function toggleButtonState(inputList, buttonElement,settings) {
 function setEventListeners(form, settings) {
     const inputList = Array.from(form.querySelectorAll(settings.inputSelector));
     const buttonElement = form.querySelector(settings.submitButtonSelector);
-    toggleButtonState(inputList, buttonElement);
+    toggleButtonState(inputList, buttonElement, settings);
     inputList.forEach(function(inputELement){
         inputELement.addEventListener('input', function() {
-            checkInputValidity(form, inputELement);
-            toggleButtonState(inputList, buttonElement);
+            checkInputValidity(form, inputELement, settings);
+            toggleButtonState(inputList, buttonElement, settings);
         })
     })
 }
@@ -69,8 +60,21 @@ function enableValidation(settings) {
         formElement.addEventListener('submit', function(evt){
             evt.preventDefault();
         });
-        setEventListeners(formElement);
+        setEventListeners(formElement, settings);
     })
 }
 
-export {showError, hideError, checkInputValidity, hasInvalidInput, toggleButtonState, setEventListeners, enableValidation};
+function clearValidation(form, settings) {
+  const inputList = Array.from(form.querySelectorAll(settings.inputSelector));
+  const buttonElement = form.querySelector(settings.submitButtonSelector);
+  
+  inputList.forEach(function(inputElement){
+    hideError(form, inputElement, settings);
+  })
+
+  buttonElement.setAttribute('aria-disabled', 'true');
+  buttonElement.classList.add(settings.inactiveButtonClass);
+
+}
+
+export {showError, hideError, checkInputValidity, hasInvalidInput, toggleButtonState, setEventListeners, enableValidation, clearValidation};
