@@ -2,11 +2,11 @@ import "./pages/index.css";
 
 import { createCard, deleteCard, cardLiked} from "./components/card.js";
 
-import { initialCards } from "./components/cards.js";
+import { openModal, closeModal} from "./components/modal.js";
 
-import { openModal, closeModal, closeByEscape } from "./components/modal.js";
+import {  enableValidation, clearValidation} from "./components/validation.js";
 
-import {showError, hideError, checkInputValidity, hasInvalidInput, toggleButtonState, setEventListeners, enableValidation, clearValidation} from "./components/validation.js";
+import { getCardsData, getId , updateUserInfo, addCardRequest, newAvatar} from "./components/api.js";
 
 const cardContainer = document.querySelector(".places__list");
 // попапы
@@ -38,7 +38,17 @@ const cardNameInput = cardForm.elements.place_name;
 const cardUrlInput = cardForm.elements.link;
 // обновление аватара
 const avatarUpdateForm = document.forms.avatar_update;
-const avatarUrlInput = avatarUpdateForm.elements.new-avatar-link;
+const avatarUrlInput = avatarUpdateForm.elements.new_avatar_link;
+const profileImage = document.querySelector('.profile__image');
+// валидация форм
+const validationConfig = {
+  formSelector: '.popup__form',
+  inputSelector: '.popup__input',
+  submitButtonSelector: '.popup__button',
+  inactiveButtonClass: 'popup__button-inactive',
+  inputErrorClass: 'popup__input_type_error',
+  errorClass: 'popup__input-error_active'
+};
 
 // редактирование профиля
 
@@ -48,7 +58,12 @@ function handleEditFormSubmit(evt) {
   editProfileTitle.textContent = nameInput.value;
   editProfileDescrp.textContent = jobInput.value;
 
-  updateUserInfo(nameInput.value, jobInput.value);
+  loading(editForm, true);
+
+  updateUserInfo(nameInput.value, jobInput.value)
+  .finally(() => {
+    loading(editForm, false);
+  });
 
   closeModal(popupEdit);
 }
@@ -58,14 +73,33 @@ function handleEditFormSubmit(evt) {
 function addNewCard(evt) {
   evt.preventDefault();
 
-  const newCard = {};
-  newCard.name = cardNameInput.value;
-  newCard.link = cardUrlInput.value;
+  loading(cardForm, true);
 
   addCardRequest(cardNameInput.value, cardUrlInput.value)
+  .finally(() => {
+    loading(cardForm, false);
+  })
+
   clearValidation(cardForm, validationConfig);
   closeModal(popupAdd);
   cardForm.reset();
+}
+
+// новый аватар 
+
+function updateUserAvatar(evt) {
+  evt.preventDefault();
+
+  loading(avatarUpdateForm, true);
+
+  newAvatar(avatarUrlInput.value)
+  .finally(() =>{
+    loading(avatarUpdateForm, false);
+  })
+
+  clearValidation(avatarUpdateForm, validationConfig);
+  closeModal(popupAvatar);
+  avatarUpdateForm.reset();
 }
 
 // попап картинка
@@ -74,6 +108,17 @@ function openPopupImage(data) {
   imageUrl.src = data.link;
   imageText.textContent = data.name;
   openModal(popupImage);
+}
+
+// UX
+
+function loading(form, isLoading) {
+  const submitButton = form.querySelector('.popup__button');
+  if(isLoading) {
+    submitButton.textContent = 'Сохранение...';
+  } else {
+    submitButton.textContent = 'Сохранить';
+  }
 }
 
 // Обработчики событий
@@ -137,59 +182,12 @@ editForm.addEventListener("submit", handleEditFormSubmit);
 
 cardForm.addEventListener("submit", addNewCard);
 
-//  // //
-
-const validationConfig = {
-  formSelector: '.popup__form',
-  inputSelector: '.popup__input',
-  submitButtonSelector: '.popup__button',
-  inactiveButtonClass: 'popup__button-inactive',
-  inputErrorClass: 'popup__input_type_error',
-  errorClass: 'popup__input-error_active'
-};
+avatarUpdateForm.addEventListener('submit', updateUserAvatar);
 
 enableValidation(validationConfig);
 
 
-// настройка апи
-// Токен: b492c2c7-d2dc-4f84-ab81-75d472967bfc
-// Идентификатор группы: wff-cohort-25
-// Ссылка на изображение: https://images.unsplash.com/photo-1724026502211-ff953e813194?q=80&w=2071&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D
-
-function getCardsData() {
-  return fetch('https://nomoreparties.co/v1/wff-cohort-25/cards', {
-    headers: {
-      authorization: 'b492c2c7-d2dc-4f84-ab81-75d472967bfc'
-    }
-  })
-    .then((res) => {
-      if (res.ok) {
-        return res.json();
-      }
-      return Promise.reject(`Что-то пошло не так: ${res.status}`);
-    })
-    .catch((err) => {
-      console.log(err);
-    });
-}
-
- 
-function getId() {
-  return fetch('https://nomoreparties.co/v1/wff-cohort-25/users/me ', {
-    headers: {
-      authorization: 'b492c2c7-d2dc-4f84-ab81-75d472967bfc'
-    }
-  })
-  .then((res) => {
-    if (res.ok) {
-      return res.json();
-    }
-    return Promise.reject(`Что-то пошло не так: ${res.status}`);
-  })
-  .catch((err) => {
-    console.log(err);
-  });
-}
+// Загрузка обновленных данных
 
 Promise.all([getCardsData(), getId()])
 .then((results) => {
@@ -204,58 +202,5 @@ Promise.all([getCardsData(), getId()])
     editProfileTitle.textContent = myData.name;
     editProfileDescrp.textContent = myData.about;
 
+    profileImage.style.backgroundImage = `url(${myData.avatar})`;
 });
-
-// редактирование профиля
-
-function updateUserInfo(name, about){
-  fetch('https://nomoreparties.co/v1/wff-cohort-25/users/me', {
-    method: 'PATCH',
-    headers: {
-      authorization: 'b492c2c7-d2dc-4f84-ab81-75d472967bfc',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({name ,about})
-  })
-  .then((res) => {
-    if (res.ok) {
-      return res.json();
-    }
-    return Promise.reject(`Что-то пошло не так: ${res.status}`);
-  })
-  .catch((err) => {
-    console.log(err);
-  })
-}
-
-// добавление новой карточки
-
-function addCardRequest(name, link) {
-  fetch('https://nomoreparties.co/v1/wff-cohort-25/cards', {
-    method: 'POST',
-    headers: {
-      authorization: 'b492c2c7-d2dc-4f84-ab81-75d472967bfc',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({name , link})
-  })
-  .then((res) => {
-    if (res.ok) {
-      return res.json();
-    }
-    return Promise.reject(`Что-то пошло не так: ${res.status}`);
-  })
-  .catch((err) => {
-    console.log(err);
-  })
-}
-
-// новый аватар 
-
-function newAvatar() {
-  evt.preventDefault();
-  
-  clearValidation(cardForm, validationConfig);
-  closeModal(popupAdd);
-  cardForm.reset();
-}
