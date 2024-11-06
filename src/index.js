@@ -6,9 +6,10 @@ import { openModal, closeModal} from "./components/modal.js";
 
 import {  enableValidation, clearValidation} from "./components/validation.js";
 
-import { getCardsData, getId , updateUserInfo, addCardRequest, newAvatar} from "./components/api.js";
+import { getCardsData, getProfileData , updateUserInfo, addCardRequest, newAvatar} from "./components/api.js";
 
 const cardContainer = document.querySelector(".places__list");
+let myId;
 // попапы
 const editButton = document.querySelector(".profile__edit-button");
 const popupEdit = document.querySelector(".popup_type_edit");
@@ -23,8 +24,8 @@ const popupImageCloseButton = popupImage.querySelector(".popup__close");
 const imageUrl = popupImage.querySelector(".popup__image");
 const imageText = popupImage.querySelector(".popup__caption");
 
-const avatarButton = document.querySelector('.profile__avatar-button');
-const popupAvatar = document.querySelector('.popup_type_new-avatar');
+const avatarButton = document.querySelector(".profile__avatar-button");
+const popupAvatar = document.querySelector(".popup_type_new-avatar");
 const popupAvatarCloseButton = popupAvatar.querySelector(".popup__close");
 // редактирование профиля
 const editForm = document.querySelector(".popup__form");
@@ -39,33 +40,36 @@ const cardUrlInput = cardForm.elements.link;
 // обновление аватара
 const avatarUpdateForm = document.forms.avatar_update;
 const avatarUrlInput = avatarUpdateForm.elements.new_avatar_link;
-const profileImage = document.querySelector('.profile__image');
+const profileImage = document.querySelector(".profile__image");
 // валидация форм
 const validationConfig = {
-  formSelector: '.popup__form',
-  inputSelector: '.popup__input',
-  submitButtonSelector: '.popup__button',
-  inactiveButtonClass: 'popup__button-inactive',
-  inputErrorClass: 'popup__input_type_error',
-  errorClass: 'popup__input-error_active'
+  formSelector: ".popup__form",
+  inputSelector: ".popup__input",
+  submitButtonSelector: ".popup__button",
+  inactiveButtonClass: "popup__button-inactive",
+  inputErrorClass: "popup__input_type_error",
+  errorClass: "popup__input-error_active",
 };
 
 // редактирование профиля
 
 function handleEditFormSubmit(evt) {
   evt.preventDefault();
-  
-  editProfileTitle.textContent = nameInput.value;
-  editProfileDescrp.textContent = jobInput.value;
 
   loading(editForm, true);
 
   updateUserInfo(nameInput.value, jobInput.value)
-  .finally(() => {
-    loading(editForm, false);
-  });
-
-  closeModal(popupEdit);
+    .then(() => {
+      editProfileTitle.textContent = nameInput.value;
+      editProfileDescrp.textContent = jobInput.value;
+      closeModal(popupEdit);
+    })
+    .catch((err) => {
+      console.log(err);
+    })
+    .finally(() => {
+      loading(editForm, false);
+    });
 }
 
 // добавление новой карточки
@@ -73,19 +77,32 @@ function handleEditFormSubmit(evt) {
 function addNewCard(evt) {
   evt.preventDefault();
 
+  const newCard = {};
+  newCard.name = cardNameInput.value;
+  newCard.link = cardUrlInput.value;
+
   loading(cardForm, true);
 
-  addCardRequest(cardNameInput.value, cardUrlInput.value)
-  .finally(() => {
-    loading(cardForm, false);
-  })
-
-  clearValidation(cardForm, validationConfig);
-  closeModal(popupAdd);
-  cardForm.reset();
+  addCardRequest(newCard)
+    .then((data) => {
+      cardContainer.prepend(
+        createCard(data, myId, deleteCard, openPopupImage, cardLiked),
+      );
+    })
+    .then(() => {
+      clearValidation(cardForm, validationConfig);
+      closeModal(popupAdd);
+      cardForm.reset();
+    })
+    .catch((err) => {
+      console.log(err);
+    })
+    .finally(() => {
+      loading(cardForm, false);
+    });
 }
 
-// новый аватар 
+// новый аватар
 
 function updateUserAvatar(evt) {
   evt.preventDefault();
@@ -93,19 +110,27 @@ function updateUserAvatar(evt) {
   loading(avatarUpdateForm, true);
 
   newAvatar(avatarUrlInput.value)
-  .finally(() =>{
-    loading(avatarUpdateForm, false);
-  })
-
-  clearValidation(avatarUpdateForm, validationConfig);
-  closeModal(popupAvatar);
-  avatarUpdateForm.reset();
+    .then((data) => {
+      profileImage.style.backgroundImage = `url(${data.avatar})`;
+    })
+    .then(() => {
+      clearValidation(avatarUpdateForm, validationConfig);
+      closeModal(popupAvatar);
+      avatarUpdateForm.reset();
+    })
+    .catch((err) => {
+      console.log(err);
+    })
+    .finally(() => {
+      loading(avatarUpdateForm, false);
+    });
 }
 
 // попап картинка
 
 function openPopupImage(data) {
   imageUrl.src = data.link;
+  imageUrl.alt = data.name;
   imageText.textContent = data.name;
   openModal(popupImage);
 }
@@ -113,11 +138,11 @@ function openPopupImage(data) {
 // UX
 
 function loading(form, isLoading) {
-  const submitButton = form.querySelector('.popup__button');
-  if(isLoading) {
-    submitButton.textContent = 'Сохранение...';
+  const submitButton = form.querySelector(".popup__button");
+  if (isLoading) {
+    submitButton.textContent = "Сохранение...";
   } else {
-    submitButton.textContent = 'Сохранить';
+    submitButton.textContent = "Сохранить";
   }
 }
 
@@ -182,25 +207,31 @@ editForm.addEventListener("submit", handleEditFormSubmit);
 
 cardForm.addEventListener("submit", addNewCard);
 
-avatarUpdateForm.addEventListener('submit', updateUserAvatar);
+avatarUpdateForm.addEventListener("submit", updateUserAvatar);
 
 enableValidation(validationConfig);
 
-
 // Загрузка обновленных данных
 
-Promise.all([getCardsData(), getId()])
-.then((results) => {
-  console.log(results);
-  const cards = results[0];
-  const myData = results[1];
+Promise.all([getCardsData(), getProfileData()])
+  .then((results) => {
+    console.log(results);
+    const cards = results[0];
+    const myData = results[1];
+
+    myId = myData._id;
 
     cards.forEach((cardData) => {
-      cardContainer.append(createCard(cardData, myData, deleteCard, openPopupImage, cardLiked));
+      cardContainer.append(
+        createCard(cardData, myId, deleteCard, openPopupImage, cardLiked),
+      );
     });
 
     editProfileTitle.textContent = myData.name;
     editProfileDescrp.textContent = myData.about;
 
     profileImage.style.backgroundImage = `url(${myData.avatar})`;
-});
+  })
+  .catch((err) => {
+    console.log(err);
+  });
