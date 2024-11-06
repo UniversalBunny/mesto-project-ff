@@ -1,6 +1,6 @@
-import {deleteCardRequest, addLike, removeLike} from "./api";
+import { deleteCardRequest, addLike, removeLike } from "./api";
 
-function createCard(cardData, userData, deleteCard, openPopupImage, cardLiked) {
+function createCard(cardData, userID, deleteCard, openPopupImage, cardLiked) {
   const cardTemplate = document.querySelector("#card-template").content;
   const cardElement = cardTemplate
     .querySelector(".places__item")
@@ -14,15 +14,15 @@ function createCard(cardData, userData, deleteCard, openPopupImage, cardLiked) {
   cardImage.alt = cardData.name;
   cardElement.querySelector(".card__title").textContent = cardData.name;
 
-  deleteCard(cardData, userData, deleteButton);
+  deleteCard(cardData, userID, deleteButton);
 
-  likesCounter.textContent = cardData.likes.length; 
-  
-  isCardLiked(cardData, userData, likeButton);
-  
-  likeButton.addEventListener('click', function(){
+  likesCounter.textContent = cardData.likes.length;
+
+  isCardLiked(cardData, userID, likeButton);
+
+  likeButton.addEventListener("click", function () {
     cardLiked(cardData, likeButton, likesCounter);
-  })
+  });
 
   cardImage.addEventListener("click", function () {
     openPopupImage(cardData);
@@ -33,29 +33,49 @@ function createCard(cardData, userData, deleteCard, openPopupImage, cardLiked) {
 
 // удаление карточки
 
-function deleteCard(cardData, userData, button) {
-    if (cardData.owner._id !== userData._id) {
-      button.remove();
-    } else {
-      button.addEventListener('click', function(){
-        deleteCardRequest(cardData._id);
-      })
-    }
+function deleteCard(cardData, userID, button) {
+  if (cardData.owner._id !== userID) {
+    button.remove();
+  } else {
+    button.addEventListener("click", function (event) {
+      deleteCardRequest(cardData._id)
+        .then(() => {
+          event.target.closest(".card").remove();
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    });
+  }
 }
 
 //  Постановка и снятие лайка
 
-function isCardLiked(cardData, userData, button){
-  if(cardData.likes.some(like => like._id === userData._id)){
-    button.classList.add('card__like-button_is-active');
+function isCardLiked(cardData, userID, button) {
+  if (cardData.likes.some((like) => like._id === userID)) {
+    button.classList.add("card__like-button_is-active");
   }
 }
 
 function cardLiked(cardData, button, counter) {
-  if(button.classList.contains('card__like-button_is-active')) {
-    removeLike(cardData._id, button, counter);
+  if (button.classList.contains("card__like-button_is-active")) {
+    removeLike(cardData._id, button, counter)
+      .then((res) => {
+        counter.textContent = res.likes.length;
+        button.classList.toggle("card__like-button_is-active");
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   } else {
-    addLike(cardData._id, button, counter);
+    addLike(cardData._id, button, counter)
+      .then((res) => {
+        counter.textContent = res.likes.length;
+        button.classList.toggle("card__like-button_is-active");
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   }
 }
 
