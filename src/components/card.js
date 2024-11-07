@@ -14,7 +14,13 @@ function createCard(cardData, userID, deleteCard, openPopupImage, cardLiked) {
   cardImage.alt = cardData.name;
   cardElement.querySelector(".card__title").textContent = cardData.name;
 
-  deleteCard(cardData, userID, deleteButton);
+  if (cardData.owner._id !== userID) {
+    deleteButton.remove();
+  } else {
+    deleteButton.addEventListener("click", function (event) {
+      deleteCard(event, cardData);
+    });
+  }
 
   likesCounter.textContent = cardData.likes.length;
 
@@ -33,20 +39,14 @@ function createCard(cardData, userID, deleteCard, openPopupImage, cardLiked) {
 
 // удаление карточки
 
-function deleteCard(cardData, userID, button) {
-  if (cardData.owner._id !== userID) {
-    button.remove();
-  } else {
-    button.addEventListener("click", function (event) {
-      deleteCardRequest(cardData._id)
-        .then(() => {
-          event.target.closest(".card").remove();
-        })
-        .catch((err) => {
-          console.log(err);
-        });
+function deleteCard(event, cardData) {
+  deleteCardRequest(cardData._id)
+    .then(() => {
+        event.target.closest(".card").remove();
+    })
+    .catch((err) => {
+        console.log(err);
     });
-  }
 }
 
 //  Постановка и снятие лайка
@@ -57,21 +57,24 @@ function isCardLiked(cardData, userID, button) {
   }
 }
 
+function changeLike(res, button, counter) {
+  counter.textContent = res.likes.length;
+  button.classList.toggle("card__like-button_is-active");
+}
+
 function cardLiked(cardData, button, counter) {
   if (button.classList.contains("card__like-button_is-active")) {
-    removeLike(cardData._id, button, counter)
+    removeLike(cardData._id)
       .then((res) => {
-        counter.textContent = res.likes.length;
-        button.classList.toggle("card__like-button_is-active");
+        changeLike(res, button, counter);
       })
       .catch((err) => {
         console.log(err);
       });
   } else {
-    addLike(cardData._id, button, counter)
+    addLike(cardData._id)
       .then((res) => {
-        counter.textContent = res.likes.length;
-        button.classList.toggle("card__like-button_is-active");
+        changeLike(res, button, counter);
       })
       .catch((err) => {
         console.log(err);

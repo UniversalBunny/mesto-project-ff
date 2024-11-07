@@ -10,8 +10,8 @@ function closeModal(popuptype) {
 
 
 function closeByEscape(evt) {
-  const popupOpen = document.querySelector('.popup_is-opened');
     if(evt.key === 'Escape') {
+      const popupOpen = document.querySelector('.popup_is-opened');
       closeModal(popupOpen);
     }
   }
